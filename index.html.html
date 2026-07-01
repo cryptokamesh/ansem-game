@@ -1,0 +1,394 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>THE BLACK BULL - Legend of SOL</title>
+    <style>
+        :root {
+            --bg-color: #050505;
+            --accent: #00ff41; /* Hacker/Crypto Green */
+            --accent-glow: rgba(0, 255, 65, 0.6);
+            --text: #ffffff;
+            --overlay: rgba(5, 5, 5, 0.95);
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: var(--bg-color);
+            color: var(--text);
+            font-family: 'Courier New', Courier, monospace; /* Changed for a more 'crypto/terminal' vibe */
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            height: 100vh;
+            overflow: hidden;
+            text-align: center;
+        }
+
+        header {
+            margin-top: 15px;
+            text-align: center;
+            z-index: 2;
+        }
+
+        h1 {
+            font-size: 2.5rem;
+            margin: 0;
+            text-transform: uppercase;
+            letter-spacing: 4px;
+            color: var(--accent);
+            text-shadow: 0 0 15px var(--accent-glow);
+        }
+
+        .stats {
+            display: flex;
+            justify-content: center;
+            gap: 40px;
+            font-size: 1.5rem;
+            margin-top: 10px;
+            font-weight: bold;
+            color: var(--accent);
+        }
+
+        /* 
+         * FIXED GRID: CSS-based trading chart background 
+         */
+        #game-board {
+            position: relative;
+            width: 90vw;
+            max-width: 900px;
+            height: 65vh;
+            background-color: #0a0a0a;
+            /* Creates a charting grid effect */
+            background-image: 
+                linear-gradient(var(--accent-glow) 1px, transparent 1px),
+                linear-gradient(90deg, var(--accent-glow) 1px, transparent 1px);
+            background-size: 40px 40px;
+            background-position: center center;
+            border: 3px solid var(--accent);
+            border-radius: 10px;
+            margin-top: 15px;
+            overflow: hidden;
+            box-shadow: 0 0 30px rgba(0, 255, 65, 0.2), inset 0 0 50px rgba(0,0,0,0.9);
+            cursor: crosshair;
+        }
+
+        /* Animated "Candlestick" element in the background */
+        .candlestick {
+            position: absolute;
+            bottom: 0;
+            width: 20px;
+            background: var(--accent);
+            box-shadow: 0 0 10px var(--accent);
+            opacity: 0.2;
+            animation: grow 4s infinite alternate ease-in-out;
+        }
+
+        @keyframes grow {
+            0% { height: 10%; }
+            100% { height: 80%; }
+        }
+
+        /* The Target Asset */
+        #the-bull {
+            position: absolute;
+            width: 110px;
+            height: 110px;
+            object-fit: cover;
+            border-radius: 50%; /* Makes the image circular if it isn't already transparent */
+            cursor: pointer;
+            display: none;
+            user-select: none;
+            -webkit-user-drag: none;
+            box-shadow: 0 0 25px var(--accent);
+            border: 2px solid var(--accent);
+            transition: transform 0.05s ease-out;
+            animation: pulse 1s infinite alternate;
+        }
+
+        @keyframes pulse {
+            from { box-shadow: 0 0 10px var(--accent); transform: scale(1); }
+            to { box-shadow: 0 0 30px var(--accent); transform: scale(1.05); }
+        }
+
+        #the-bull:active {
+            transform: scale(0.85) rotate(15deg) !important; /* Force scale down on click */
+            filter: brightness(1.5);
+        }
+
+        /* Floating Score Animation (+1) */
+        .floating-score {
+            position: absolute;
+            color: var(--accent);
+            font-size: 1.5rem;
+            font-weight: bold;
+            text-shadow: 0 0 10px var(--accent);
+            pointer-events: none;
+            animation: floatUp 0.8s ease-out forwards;
+            z-index: 5;
+        }
+
+        @keyframes floatUp {
+            0% { opacity: 1; transform: translateY(0) scale(1); }
+            100% { opacity: 0; transform: translateY(-50px) scale(1.5); }
+        }
+
+        /* Screens */
+        .screen {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) scale(0.9);
+            opacity: 0;
+            background: var(--overlay);
+            padding: 40px;
+            border: 2px solid var(--accent);
+            border-radius: 15px;
+            z-index: 10;
+            box-shadow: 0 0 40px rgba(0, 255, 65, 0.4);
+            transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            pointer-events: none; /* Prevent clicks when hidden */
+        }
+
+        .screen.visible {
+            opacity: 1;
+            transform: translate(-50%, -50%) scale(1);
+            pointer-events: all;
+        }
+
+        button, .share-btn {
+            background-color: transparent;
+            color: var(--accent);
+            border: 2px solid var(--accent);
+            padding: 15px 30px;
+            font-size: 1.2rem;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: bold;
+            margin-top: 20px;
+            text-decoration: none;
+            display: inline-block;
+            transition: all 0.2s;
+            text-transform: uppercase;
+            font-family: inherit;
+        }
+
+        button:hover, .share-btn:hover {
+            background-color: var(--accent);
+            color: #000;
+            box-shadow: 0 0 20px var(--accent);
+            transform: translateY(-2px);
+        }
+
+        .share-btn {
+            border-color: #1DA1F2;
+            color: #1DA1F2;
+        }
+
+        .share-btn:hover {
+            background-color: #1DA1F2;
+            color: white;
+            box-shadow: 0 0 20px #1DA1F2;
+        }
+
+        .screen p {
+            color: #ccc;
+            font-size: 1.1rem;
+            line-height: 1.6;
+        }
+
+        .screen h2 {
+            color: var(--accent);
+            font-size: 2rem;
+            margin-top: 0;
+            text-shadow: 0 0 10px var(--accent-glow);
+        }
+
+        /* Dynamic Score formatting */
+        #final-score {
+            font-size: 4rem;
+            color: var(--accent);
+            font-weight: bold;
+            display: block;
+            margin: 10px 0;
+            text-shadow: 0 0 20px var(--accent-glow);
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>THE BLACK BULL</h1>
+        <div class="stats">
+            <div>PNL: <span id="score">0</span> ANSEM </div>
+            <div>T-MINUS: <span id="time">30</span>s</div>
+        </div>
+    </header>
+
+    <div id="game-board">
+        <!-- Decorative Candlesticks for the background grid -->
+        <div class="candlestick" style="left: 10%; animation-delay: 0s;"></div>
+        <div class="candlestick" style="left: 30%; animation-delay: 1s; width: 15px;"></div>
+        <div class="candlestick" style="left: 60%; animation-delay: 0.5s; width: 25px;"></div>
+        <div class="candlestick" style="left: 85%; animation-delay: 2s;"></div>
+
+        <!-- The Target Image -->
+        <img id="the-bull" src="ansem.avif" alt="Legend of SOL">
+        
+        <!-- Start Screen -->
+        <div id="start-screen" class="screen visible">
+            <h2>CATCH THE SOLANA JESUS</h2>
+            <p>He's a legend. He is the bull run incarnate.<br>His eyes are set on the moon.</p>
+            <p style="color: var(--accent); font-weight: bold;">Score 30 seconds of pure profit.</p>
+            <button onclick="startGame()">Commence Trade</button>
+        </div>
+
+        <!-- Game Over Screen -->
+        <div id="game-over-screen" class="screen">
+            <h2>TRADE COMPLETED</h2>
+            <p>Your Final Profit:</p>
+            <span id="final-score">0</span>
+            <p>Legend says the bull run never ends for those who click fast enough.</p>
+            <button onclick="startGame()">Ape In Again</button>
+            <br>
+            <a id="twitter-share" class="share-btn" href="#" target="_blank">Post to X</a>
+        </div>
+    </div>
+
+    <script>
+        let score = 0;
+        let timeLeft = 30;
+        let gameInterval;
+        let bullTimer;
+        
+        const bull = document.getElementById('the-bull');
+        const scoreDisplay = document.getElementById('score');
+        const timeDisplay = document.getElementById('time');
+        const startScreen = document.getElementById('start-screen');
+        const gameOverScreen = document.getElementById('game-over-screen');
+        const gameBoard = document.getElementById('game-board');
+        const finalScoreDisplay = document.getElementById('final-score');
+
+        function startGame() {
+            // Reset Stats
+            score = 0;
+            timeLeft = 30;
+            scoreDisplay.textContent = score;
+            timeDisplay.textContent = timeLeft;
+            finalScoreDisplay.textContent = "0";
+
+            // UI Adjustments
+            startScreen.classList.remove('visible');
+            gameOverScreen.classList.remove('visible');
+            
+            // Short delay before bull appears to allow screen transition
+            setTimeout(() => {
+                bull.style.display = 'block';
+                moveBull();
+                gameInterval = setInterval(countdown, 1000);
+            }, 300);
+        }
+
+        function countdown() {
+            timeLeft--;
+            timeDisplay.textContent = timeLeft;
+
+            if (timeLeft <= 0) {
+                endGame();
+            }
+        }
+
+        function moveBull() {
+            clearTimeout(bullTimer);
+
+            // Calculate random positions staying within bounds
+            const maxX = gameBoard.clientWidth - bull.clientWidth;
+            const maxY = gameBoard.clientHeight - bull.clientHeight;
+
+            const randomX = Math.max(0, Math.floor(Math.random() * maxX));
+            const randomY = Math.max(0, Math.floor(Math.random() * maxY));
+
+            bull.style.left = `${randomX}px`;
+            bull.style.top = `${randomY}px`;
+
+            // Gets dramatically faster as you score more
+            const currentSpeed = Math.max(250, 1200 - (score * 45)); 
+            bullTimer = setTimeout(moveBull, currentSpeed);
+        }
+
+        // Click Event listener for the bull
+        bull.addEventListener('mousedown', (e) => {
+            e.preventDefault(); 
+            
+            score++;
+            scoreDisplay.textContent = score;
+            
+            // Create Floating +1 Animation
+            createFloatingScore(e.clientX, e.clientY);
+            
+            // Immediately move the bull
+            moveBull();
+        });
+
+        // Creates the +1 that floats up when you click
+        function createFloatingScore(x, y) {
+            const plusOne = document.createElement('div');
+            plusOne.textContent = '+1 ANSEM';
+            plusOne.className = 'floating-score';
+            
+            // Adjust position to be relative to the game board
+            const rect = gameBoard.getBoundingClientRect();
+            plusOne.style.left = `${x - rect.left}px`;
+            plusOne.style.top = `${y - rect.top}px`;
+            
+            gameBoard.appendChild(plusOne);
+
+            // Remove element after animation completes
+            setTimeout(() => {
+                plusOne.remove();
+            }, 800);
+        }
+
+        function endGame() {
+            clearInterval(gameInterval);
+            clearTimeout(bullTimer);
+            
+            bull.style.display = 'none';
+            gameOverScreen.classList.add('visible');
+
+            // Setup Social Media Share Link (Twitter/X)
+            const tweetText = encodeURIComponent(`I secured ${score} ANSEM in "THE BLACK BULL"! 🚀 Can you out-trade the SOLANA JESUS? Play here:`);
+            const gameUrl = encodeURIComponent(window.location.href); 
+            const twitterIntent = `https://twitter.com/intent/tweet?text=${tweetText}&url=${gameUrl}`;
+            document.getElementById('twitter-share').href = twitterIntent;
+
+            // Animate Final Score counting up
+            animateFinalScore();
+        }
+
+        function animateFinalScore() {
+            let currentDisplayScore = 0;
+            const duration = 1500; // 1.5 seconds to count up
+            const intervalTime = 30; // Update every 30ms
+            const steps = duration / intervalTime;
+            const increment = score / steps;
+
+            const counter = setInterval(() => {
+                currentDisplayScore += increment;
+                
+                if (currentDisplayScore >= score) {
+                    currentDisplayScore = score;
+                    clearInterval(counter);
+                    // Add a little pop effect when it finishes
+                    finalScoreDisplay.style.transform = "scale(1.2)";
+                    setTimeout(() => finalScoreDisplay.style.transform = "scale(1)", 200);
+                }
+                
+                finalScoreDisplay.textContent = Math.floor(currentDisplayScore);
+            }, intervalTime);
+        }
+    </script>
+</body>
+</html>
