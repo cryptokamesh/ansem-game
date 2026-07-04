@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Tap to Pump — The Black Bull Revolution | $ANSEM</title>
+<meta name="description" content="Tap as fast as you can to pump $ANSEM. Join the Black Bull Revolution.">
+
+<!-- Fonts -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&family=Rajdhani:wght@500;600;700&display=swap" rel="stylesheet">
+
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<!-- ============ AMBIENT BACKGROUND (persists across all screens) ============ -->
+<div class="bg-layer" id="bgLayer">
+  <div class="bg-gradient"></div>
+  <div class="bg-grid"></div>
+  <canvas id="bgParticles"></canvas>
+</div>
+
+<!-- ============ APP ROOT ============ -->
+<div id="app">
+
+  <!-- ---------- LOADING SCREEN ---------- -->
+  <section class="screen" id="screen-loading" data-active="true">
+    <div class="loader-wrap">
+      <div class="loader-logo">🐂</div>
+      <div class="loader-title">BLACK BULL</div>
+      <div class="loader-bar-track">
+        <div class="loader-bar-fill" id="loaderFill"></div>
+      </div>
+      <div class="loader-hint" id="loaderHint">Waking the bull…</div>
+    </div>
+  </section>
+
+  <!-- ---------- LANDING SCREEN ---------- -->
+  <section class="screen" id="screen-landing">
+    <div class="landing-inner glass-panel">
+      <div class="eyebrow">$ANSEM · SOLANA</div>
+      <h1 class="landing-title">
+        <span class="title-line">THE BLACK BULL</span>
+        <span class="title-line title-accent">REVOLUTION</span>
+      </h1>
+      <p class="landing-subtitle">Tap to Pump. Become a Legend.</p>
+
+      <div class="landing-form">
+        <input
+          type="text"
+          id="nameInput"
+          class="name-input"
+          placeholder="Enter your name"
+          maxlength="16"
+          autocomplete="off"
+        />
+        <div class="name-error" id="nameError">Enter a name to join the revolution</div>
+      </div>
+
+      <div class="landing-actions">
+        <button class="btn btn-primary btn-glow" id="playBtn">
+          <span>PLAY</span>
+        </button>
+        <button class="btn btn-secondary" id="leaderboardBtn">
+          🏆 Leaderboard
+        </button>
+      </div>
+
+      <div class="landing-footer">
+        <span class="chip">⚡ 30s Runs</span>
+        <span class="chip">🔥 Combo Multipliers</span>
+        <span class="chip">🐂 Black Bull Mode</span>
+      </div>
+    </div>
+
+    <div class="floating-icons" id="floatingIcons"></div>
+  </section>
+
+  <!-- ---------- COUNTDOWN SCREEN ---------- -->
+  <section class="screen" id="screen-countdown">
+    <div class="countdown-number" id="countdownNumber">3</div>
+    <div class="countdown-sub" id="countdownSub"></div>
+  </section>
+
+  <!-- ---------- GAME SCREEN ---------- -->
+  <section class="screen" id="screen-game">
+
+    <!-- HUD -->
+    <div class="hud">
+      <div class="hud-left glass-panel">
+        <div class="hud-label">$ANSEM PUMPED</div>
+        <div class="hud-score" id="scoreDisplay">0</div>
+        <div class="combo-row" id="comboRow">
+          <span class="combo-x" id="comboMultiplier">x1</span>
+          <span class="combo-count" id="comboCount"></span>
+        </div>
+      </div>
+
+      <div class="hud-right glass-panel" id="timerBox">
+        <div class="hud-label">TIME</div>
+        <div class="hud-timer" id="timerDisplay">30</div>
+      </div>
+    </div>
+
+    <!-- Energy meter -->
+    <div class="energy-wrap glass-panel">
+      <div class="energy-label">
+        <span>PUMP ENERGY</span>
+        <span id="energyModeLabel"></span>
+      </div>
+      <div class="energy-track">
+        <div class="energy-fill" id="energyFill"></div>
+      </div>
+    </div>
+
+    <!-- Character stage -->
+    <div class="stage" id="stage">
+      <!-- .mover is repositioned by JS so the character roams the stage;
+           only pointer events landing on it (not the empty stage) count as a tap. -->
+      <div class="mover" id="mover">
+        <div class="bull-horns" id="bullHorns">🐂</div>
+        <div class="ansem-wrap" id="ansemWrap">
+          <div class="ansem-glow"></div>
+          <div class="ansem-char" id="ansemChar">
+            <img src="ansem.avif" alt="ANSEM" id="ansemImg" draggable="false"
+                 onerror="this.style.display='none'; document.getElementById('ansemFallback').style.display='flex';">
+            <div class="ansem-fallback" id="ansemFallback">🐂</div>
+          </div>
+        </div>
+      </div>
+      <div class="tap-ripples" id="tapRipples"></div>
+      <div class="floating-texts" id="floatingTexts"></div>
+      <div class="particles" id="particles"></div>
+    </div>
+
+    <!-- Combo banner -->
+    <div class="combo-banner" id="comboBanner"></div>
+
+    <!-- Milestone banner -->
+    <div class="milestone-banner" id="milestoneBanner"></div>
+
+    <!-- Achievement toast -->
+    <div class="achievement-toast" id="achievementToast"></div>
+
+    <div class="tap-hint" id="tapHint">TAP THE BULL — OR PRESS SPACE</div>
+  </section>
+
+  <!-- ---------- END SCREEN ---------- -->
+  <section class="screen" id="screen-end">
+    <div class="end-inner glass-panel">
+      <div class="end-newath" id="newAthBanner">🏆 NEW ATH!</div>
+      <div class="eyebrow">GAME OVER</div>
+      <h2 class="end-title" id="endPlayerName">Player</h2>
+
+      <div class="end-stats">
+        <div class="stat-block">
+          <div class="stat-label">$ANSEM PUMPED</div>
+          <div class="stat-value" id="endScore">0</div>
+        </div>
+        <div class="stat-row">
+          <div class="stat-block small">
+            <div class="stat-label">HIGHEST COMBO</div>
+            <div class="stat-value small" id="endCombo">0</div>
+          </div>
+          <div class="stat-block small">
+            <div class="stat-label">BEST SCORE</div>
+            <div class="stat-value small" id="endBest">0</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="end-badges" id="endBadges"></div>
+
+      <div class="end-actions">
+        <button class="btn btn-primary btn-glow" id="playAgainBtn">Play Again</button>
+        <button class="btn btn-secondary" id="endLeaderboardBtn">🏆 Leaderboard</button>
+        <button class="btn btn-secondary" id="shareBtn">📤 Share Result</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ---------- LEADERBOARD SCREEN ---------- -->
+  <section class="screen" id="screen-leaderboard">
+    <div class="lb-inner glass-panel">
+      <h2 class="lb-title">🏆 BLACK BULL LEADERBOARD</h2>
+      <div class="lb-list" id="lbList"></div>
+      <button class="btn btn-secondary" id="lbBackBtn">Back</button>
+    </div>
+  </section>
+
+</div>
+
+<!-- Toast (share copy confirmation) -->
+<div class="toast" id="toast"></div>
+
+<!-- Share card canvas (hidden, used to generate PNG) -->
+<canvas id="shareCanvas" width="1000" height="1000" style="display:none;"></canvas>
+
+<!-- Audio (safe even if files are missing) -->
+<audio id="sfxTap" preload="auto" src="sounds/tap.mp3"></audio>
+<audio id="sfxCombo" preload="auto" src="sounds/tap.mp3"></audio>
+<audio id="sfxSuper" preload="auto" src="sounds/tap.mp3"></audio>
+<audio id="sfxCountdown" preload="auto" src="sounds/countdown.mp3"></audio>
+<audio id="sfxGameOver" preload="auto" src="sounds/gameover.mp3"></audio>
+<audio id="sfxMusic" preload="auto" src="sounds/music.mp3" loop></audio>
+<footer class="site-footer">
+  © 2026 Black Bull Revolution ·
+  <a href="https://x.com/CryptoKamesh" target="_blank" rel="noopener noreferrer">@CryptoKamesh</a>
+</footer>
+<script src="script.js"></script>
+</body>
+</html>
